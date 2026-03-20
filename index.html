@@ -5,452 +5,474 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Student Performance Analysis</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
-
-  :root {
-    --bg:        #0a0c10;
-    --surface:   #111318;
-    --border:    #1e2229;
-    --border2:   #2a3040;
-    --text:      #dde3ee;
-    --muted:     #6b7385;
-    --accent:    #f0b429;
-    --accent2:   #64d2ff;
-    --red:       #c0392b;
-    --orange:    #e67e22;
-    --blue:      #2980b9;
-    --green:     #27ae60;
-    --mono:      'IBM Plex Mono', monospace;
-    --sans:      'IBM Plex Sans', sans-serif;
-  }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:     #0a0e13;
+    --panel:  #111820;
+    --border: #1e2a35;
+    --green:  #3ddc84;
+    --amber:  #f0a500;
+    --blue:   #4fa3e0;
+    --red:    #e05c5c;
+    --dim:    #4a6070;
+    --mid:    #7a9bb0;
+    --text:   #d0dde8;
+    --bright: #eef4fa;
+
+    /* cluster colours — kept from original */
+    --c0: #c0392b;
+    --c1: #e67e22;
+    --c2: #2980b9;
+    --c3: #27ae60;
+  }
 
   html { scroll-behavior: smooth; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--sans);
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 14px;
-    line-height: 1.7;
-    min-height: 100vh;
+    line-height: 1.75;
+    overflow-x: hidden;
   }
 
-  /* grain overlay */
-  body::before {
+  /* ── Scroll reveal ─────────────────────────────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+  section { padding: 72px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* ── Header ────────────────────────────────────────────────────────── */
+  header {
+    padding: 100px 0 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
     content: '';
-    position: fixed;
+    position: absolute;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.6;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.35;
+    animation: gridshift 20s linear infinite;
   }
 
-  /* ------------------------------------------------ LAYOUT */
-  .page {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 24px 80px;
+  @keyframes gridshift {
+    0%   { background-position: 0 0; }
+    100% { background-position: 40px 40px; }
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 100%, rgba(10,14,19,0.95) 30%, transparent 100%);
+  }
+
+  .header-inner {
     position: relative;
     z-index: 1;
+    text-align: center;
   }
 
-  /* ------------------------------------------------ HEADER */
-  header {
-    padding: 64px 0 48px;
-    border-bottom: 1px solid var(--border2);
-    margin-bottom: 56px;
-    position: relative;
-  }
-
-  .header-tag {
-    font-family: var(--mono);
+  .tag {
+    display: inline-block;
     font-size: 11px;
-    color: var(--accent);
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .header-tag::before {
-    content: '';
-    display: inline-block;
-    width: 28px;
-    height: 1px;
-    background: var(--accent);
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 3px 10px;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadein 0.6s 0.2s forwards;
   }
 
   h1 {
-    font-family: var(--mono);
-    font-size: clamp(22px, 4vw, 40px);
-    font-weight: 600;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 6vw, 58px);
+    color: var(--bright);
     line-height: 1.15;
-    color: var(--text);
-    letter-spacing: -0.02em;
     margin-bottom: 16px;
+    opacity: 0;
+    animation: fadein 0.7s 0.4s forwards;
   }
 
-  .subtitle {
-    color: var(--muted);
-    font-family: var(--mono);
+  h1 em { font-style: italic; color: var(--amber); }
+
+  .sub {
     font-size: 13px;
+    color: var(--mid);
+    max-width: 520px;
+    margin: 0 auto 36px;
+    opacity: 0;
+    animation: fadein 0.7s 0.6s forwards;
   }
 
+  /* meta pills */
   .meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 24px;
-    margin-top: 32px;
+    gap: 12px;
+    justify-content: center;
+    opacity: 0;
+    animation: fadein 0.7s 0.8s forwards;
   }
-  .meta-item {
+
+  .meta-pill {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 120px;
+    text-align: left;
   }
+
   .meta-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    color: var(--dim);
   }
+
   .meta-value {
-    font-family: var(--mono);
     font-size: 13px;
-    color: var(--accent);
-  }
-
-  /* ------------------------------------------------ SECTION */
-  section {
-    margin-bottom: 64px;
-  }
-  .section-header {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    margin-bottom: 28px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
-  h2 {
-    font-family: var(--mono);
-    font-size: 16px;
+    color: var(--amber);
     font-weight: 500;
-    color: var(--text);
-    letter-spacing: -0.01em;
   }
 
-  /* ------------------------------------------------ STAT CARDS */
+  @keyframes fadein { to { opacity: 1; } }
+
+  /* ── Section headings ──────────────────────────────────────────────── */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(22px, 4vw, 34px);
+    color: var(--bright);
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+
+  p { color: var(--mid); margin-bottom: 14px; max-width: 700px; }
+
+  /* ── Stat cards ────────────────────────────────────────────────────── */
   .stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 40px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 0;
   }
+
   .stat-card {
-    background: var(--surface);
+    background: var(--panel);
     border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
     padding: 20px;
-    position: relative;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.2s;
   }
-  .stat-card.visible { opacity: 1; transform: translateY(0); }
-  .stat-card:hover { border-color: var(--border2); }
-  .stat-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px; height: 100%;
-    background: var(--accent);
-  }
+
   .stat-num {
-    font-family: var(--mono);
     font-size: 28px;
     font-weight: 600;
-    color: var(--accent);
+    color: var(--amber);
     line-height: 1;
     margin-bottom: 6px;
   }
+
   .stat-label {
-    font-family: var(--mono);
     font-size: 10px;
-    color: var(--muted);
+    color: var(--dim);
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
 
-  /* ------------------------------------------------ CLUSTER CARDS */
+  /* ── Cluster cards ─────────────────────────────────────────────────── */
   .cluster-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 16px;
-    margin-bottom: 48px;
-  }
-  .cluster-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 24px;
-    position: relative;
-    opacity: 0;
-    transform: translateY(14px);
-    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.25s;
-    cursor: default;
-  }
-  .cluster-card.visible { opacity: 1; transform: translateY(0); }
-  .cluster-card:hover { border-color: var(--border2); }
-  .cluster-card .c-stripe {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 3px;
-  }
-  .cluster-card h3 {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-  .cluster-card .c-sub {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    margin-bottom: 18px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  .c-stat-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-  .c-stat-row:last-child { border-bottom: none; }
-  .c-stat-key { color: var(--muted); }
-  .c-stat-val { color: var(--text); font-weight: 500; }
-  .c-perf {
-    font-size: 32px;
-    font-family: var(--mono);
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .c-perf-label {
-    font-family: var(--mono);
-    font-size: 9px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 16px;
-  }
-  .c-rec {
-    margin-top: 16px;
-    padding: 12px;
-    background: rgba(255,255,255,0.02);
-    border-left: 2px solid var(--border2);
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  /* ------------------------------------------------ CHART CONTAINERS */
-  .chart-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .chart-grid-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  @media (max-width: 800px) {
-    .chart-grid-2, .chart-grid-3 { grid-template-columns: 1fr; }
-  }
-  .chart-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 20px;
-    opacity: 0;
-    transform: translateY(12px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  .chart-box.visible { opacity: 1; transform: translateY(0); }
-  .chart-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 16px;
-  }
-  .chart-box canvas { display: block; }
-
-  /* ------------------------------------------------ FINDINGS */
-  .finding-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .finding-item {
-    display: flex;
-    gap: 16px;
-    padding: 18px 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  .finding-item.visible { opacity: 1; transform: translateX(0); }
-  .finding-r {
-    font-family: var(--mono);
-    font-size: 20px;
-    font-weight: 600;
-    min-width: 70px;
-    padding-top: 2px;
-  }
-  .finding-body {}
-  .finding-feature {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-    font-weight: 500;
-    margin-bottom: 3px;
-  }
-  .finding-desc {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  /* ------------------------------------------------ METHOD BOX */
-  .method-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 14px;
   }
-  .method-card {
-    background: var(--surface);
+
+  .cluster-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 24px;
+    position: relative;
+  }
+
+  .c-stripe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+  }
+
+  .c-perf {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .c-perf-label {
+    font-size: 9px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+  }
+
+  .c-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--bright);
+    margin-bottom: 2px;
+  }
+
+  .c-sub {
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+
+  .c-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .c-stat-row:last-of-type { border-bottom: none; }
+  .c-stat-key { color: var(--dim); }
+  .c-stat-val { color: var(--text); font-weight: 500; }
+
+  .c-rec {
+    margin-top: 14px;
+    padding: 12px;
+    background: rgba(255,255,255,0.02);
+    border-left: 2px solid var(--border);
+    font-size: 12px;
+    color: var(--mid);
+    line-height: 1.6;
+  }
+
+  /* ── Chart boxes ───────────────────────────────────────────────────── */
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 800px) {
+    .chart-grid-2, .chart-grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .chart-box {
+    background: var(--panel);
     border: 1px solid var(--border);
     padding: 20px;
   }
-  .method-card h4 {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
+
+  .chart-title {
+    font-size: 10px;
+    color: var(--dim);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+  }
+
+  /* ── Findings ──────────────────────────────────────────────────────── */
+  .finding-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .finding-item {
+    display: flex;
+    gap: 20px;
+    padding: 18px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+  }
+
+  .finding-r {
+    font-size: 22px;
+    font-weight: 600;
+    min-width: 68px;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .finding-feature {
+    font-size: 12px;
+    color: var(--bright);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .finding-desc { font-size: 12px; color: var(--mid); line-height: 1.65; }
+
+  /* ── Method cards ──────────────────────────────────────────────────── */
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+  }
+
+  .method-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--border);
+    padding: 20px;
+    transition: border-top-color 0.2s;
+  }
+
+  .method-card:hover { border-top-color: var(--amber); }
+
+  .method-card h4 {
+    font-size: 10px;
+    color: var(--amber);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
     margin-bottom: 8px;
   }
-  .method-card p {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.7;
-  }
+
+  .method-card p { font-size: 12px; color: var(--mid); line-height: 1.7; margin: 0; }
+
   code {
-    font-family: var(--mono);
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     background: var(--border);
     padding: 1px 5px;
-    color: var(--accent2);
+    color: var(--blue);
   }
 
-  /* ------------------------------------------------ FOOTER */
+  /* ── Footer ────────────────────────────────────────────────────────── */
   footer {
     border-top: 1px solid var(--border);
-    padding-top: 24px;
-    margin-top: 40px;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
+    padding: 36px 0;
+    text-align: center;
   }
-  footer span {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
+
+  footer p {
+    font-size: 12px;
+    color: var(--dim);
+    max-width: none;
+    margin-bottom: 10px;
   }
-  footer a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-  footer a:hover { text-decoration: underline; }
+
+  footer a { color: var(--mid); text-decoration: none; }
+  footer a:hover { color: var(--amber); }
+
 </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- HEADER -->
-  <header>
-    <div class="header-tag">Data Analysis / Machine Learning</div>
-    <h1>Student Performance<br>Analysis</h1>
-    <p class="subtitle">K-Means Clustering + Pearson Correlation &mdash; 10,000 records</p>
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="container header-inner">
+    <div class="tag">Data Analysis / Machine Learning</div>
+    <h1>Student Performance<br><em>Analysis</em></h1>
+    <p class="sub">K-Means Clustering + Pearson Correlation on 10,000 student records</p>
     <div class="meta-row">
-      <div class="meta-item">
+      <div class="meta-pill">
         <span class="meta-label">Dataset</span>
         <span class="meta-value">10,000 students</span>
       </div>
-      <div class="meta-item">
+      <div class="meta-pill">
         <span class="meta-label">Features</span>
         <span class="meta-value">6 variables</span>
       </div>
-      <div class="meta-item">
+      <div class="meta-pill">
         <span class="meta-label">Method</span>
         <span class="meta-value">K-Means (k=4)</span>
       </div>
-      <div class="meta-item">
+      <div class="meta-pill">
         <span class="meta-label">Tools</span>
         <span class="meta-value">Python, scikit-learn</span>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
-  <!-- OVERVIEW STATS -->
-  <section>
-    <div class="section-header">
-      <span class="section-num">01</span>
+<!-- ── 01 Dataset Overview ─────────────────────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 01</div>
       <h2>Dataset Overview</h2>
     </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num">10,000</div><div class="stat-label">Student Records</div></div>
-      <div class="stat-card"><div class="stat-num">55.2</div><div class="stat-label">Mean Performance Index</div></div>
-      <div class="stat-card"><div class="stat-num">5.0h</div><div class="stat-label">Mean Study Hours</div></div>
-      <div class="stat-card"><div class="stat-num">6.5h</div><div class="stat-label">Mean Sleep Hours</div></div>
-      <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Missing Values</div></div>
+    <div class="stat-grid reveal">
+      <div class="stat-card">
+        <div class="stat-num">10,000</div>
+        <div class="stat-label">Student Records</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">55.2</div>
+        <div class="stat-label">Mean Performance Index</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">5.0h</div>
+        <div class="stat-label">Mean Study Hours</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">6.5h</div>
+        <div class="stat-label">Mean Sleep Hours</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">0</div>
+        <div class="stat-label">Missing Values</div>
+      </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CLUSTER PROFILES -->
-  <section>
-    <div class="section-header">
-      <span class="section-num">02</span>
+<!-- ── 02 Cluster Profiles ─────────────────────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 02</div>
       <h2>Cluster Profiles</h2>
     </div>
-    <div class="cluster-grid">
+    <div class="cluster-grid reveal">
 
       <div class="cluster-card">
-        <div class="c-stripe" style="background:#c0392b"></div>
-        <div class="c-perf" style="color:#c0392b">32.4</div>
+        <div class="c-stripe" style="background:var(--c0)"></div>
+        <div class="c-perf" style="color:var(--c0)">32.4</div>
         <div class="c-perf-label">Performance Index</div>
-        <h3>Cluster 0</h3>
-        <div class="c-sub">Struggling &mdash; n=2,451</div>
+        <div class="c-name">Cluster 0</div>
+        <div class="c-sub">Struggling - n=2,451</div>
         <div class="c-stat-row"><span class="c-stat-key">Hours Studied</span><span class="c-stat-val">2.7h</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Previous Scores</span><span class="c-stat-val">53.7</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Sleep Hours</span><span class="c-stat-val">6.4h</span></div>
@@ -459,11 +481,11 @@
       </div>
 
       <div class="cluster-card">
-        <div class="c-stripe" style="background:#e67e22"></div>
-        <div class="c-perf" style="color:#e67e22">47.5</div>
+        <div class="c-stripe" style="background:var(--c1)"></div>
+        <div class="c-perf" style="color:var(--c1)">47.5</div>
         <div class="c-perf-label">Performance Index</div>
-        <h3>Cluster 1</h3>
-        <div class="c-sub">Effort-Driven &mdash; n=2,648</div>
+        <div class="c-name">Cluster 1</div>
+        <div class="c-sub">Effort-Driven - n=2,648</div>
         <div class="c-stat-row"><span class="c-stat-key">Hours Studied</span><span class="c-stat-val">7.2h</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Previous Scores</span><span class="c-stat-val">55.7</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Sleep Hours</span><span class="c-stat-val">6.5h</span></div>
@@ -472,11 +494,11 @@
       </div>
 
       <div class="cluster-card">
-        <div class="c-stripe" style="background:#2980b9"></div>
-        <div class="c-perf" style="color:#2980b9">63.5</div>
+        <div class="c-stripe" style="background:var(--c2)"></div>
+        <div class="c-perf" style="color:var(--c2)">63.5</div>
         <div class="c-perf-label">Performance Index</div>
-        <h3>Cluster 2</h3>
-        <div class="c-sub">Coasting &mdash; n=2,496</div>
+        <div class="c-name">Cluster 2</div>
+        <div class="c-sub">Coasting - n=2,496</div>
         <div class="c-stat-row"><span class="c-stat-key">Hours Studied</span><span class="c-stat-val">2.8h</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Previous Scores</span><span class="c-stat-val">83.6</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Sleep Hours</span><span class="c-stat-val">6.6h</span></div>
@@ -485,11 +507,11 @@
       </div>
 
       <div class="cluster-card">
-        <div class="c-stripe" style="background:#27ae60"></div>
-        <div class="c-perf" style="color:#27ae60">78.5</div>
+        <div class="c-stripe" style="background:var(--c3)"></div>
+        <div class="c-perf" style="color:var(--c3)">78.5</div>
         <div class="c-perf-label">Performance Index</div>
-        <h3>Cluster 3</h3>
-        <div class="c-sub">High Achievers &mdash; n=2,405</div>
+        <div class="c-name">Cluster 3</div>
+        <div class="c-sub">High Achievers - n=2,405</div>
         <div class="c-stat-row"><span class="c-stat-key">Hours Studied</span><span class="c-stat-val">7.2h</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Previous Scores</span><span class="c-stat-val">85.9</span></div>
         <div class="c-stat-row"><span class="c-stat-key">Sleep Hours</span><span class="c-stat-val">6.6h</span></div>
@@ -498,15 +520,17 @@
       </div>
 
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CHARTS ROW 1 -->
-  <section>
-    <div class="section-header">
-      <span class="section-num">03</span>
+<!-- ── 03 Visualisations ────────────────────────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 03</div>
       <h2>Visualisations</h2>
     </div>
-    <div class="chart-grid-2">
+    <div class="chart-grid-2 reveal">
       <div class="chart-box">
         <div class="chart-title">Correlation with Performance Index</div>
         <canvas id="corrChart" height="220"></canvas>
@@ -516,7 +540,7 @@
         <canvas id="radarChart" height="220"></canvas>
       </div>
     </div>
-    <div class="chart-grid-3">
+    <div class="chart-grid-3 reveal">
       <div class="chart-box">
         <div class="chart-title">Performance by Cluster</div>
         <canvas id="perfBox" height="200"></canvas>
@@ -526,64 +550,68 @@
         <canvas id="sizeChart" height="200"></canvas>
       </div>
       <div class="chart-box">
-        <div class="chart-title">Elbow Curve &mdash; Choosing K</div>
+        <div class="chart-title">Elbow Curve - Choosing K</div>
         <canvas id="elbowChart" height="200"></canvas>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CORRELATION FINDINGS -->
-  <section>
-    <div class="section-header">
-      <span class="section-num">04</span>
+<!-- ── 04 Correlation Findings ─────────────────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 04</div>
       <h2>Correlation Findings</h2>
     </div>
-    <div class="finding-list">
+    <div class="finding-list reveal">
       <div class="finding-item">
-        <div class="finding-r" style="color:#27ae60">+0.92</div>
-        <div class="finding-body">
+        <div class="finding-r" style="color:var(--c3)">+0.92</div>
+        <div>
           <div class="finding-feature">Previous Scores</div>
           <div class="finding-desc">Dominant predictor by a large margin. Current performance is largely a continuation of prior trajectory. This shifts curriculum design priority toward pre-entry diagnostics and early-term interventions rather than in-semester behaviour change.</div>
         </div>
       </div>
       <div class="finding-item">
-        <div class="finding-r" style="color:#2980b9">+0.37</div>
-        <div class="finding-body">
+        <div class="finding-r" style="color:var(--c2)">+0.37</div>
+        <div>
           <div class="finding-feature">Hours Studied</div>
           <div class="finding-desc">Moderate positive effect. The only meaningfully modifiable behavioural variable in this dataset. However, Cluster 1 shows that hours alone are insufficient without addressing underlying knowledge gaps.</div>
         </div>
       </div>
       <div class="finding-item">
-        <div class="finding-r" style="color:var(--muted)">+0.05</div>
-        <div class="finding-body">
+        <div class="finding-r" style="color:var(--dim)">+0.05</div>
+        <div>
           <div class="finding-feature">Sleep Hours</div>
-          <div class="finding-desc">Negligible linear relationship with Performance Index. Sleep hours are nearly identical across all four clusters (6.4 to 6.6h), which may explain the weak correlation. There is no spread to detect a relationship from.</div>
+          <div class="finding-desc">Negligible linear relationship with Performance Index. Sleep hours are nearly identical across all four clusters (6.4 to 6.6h), which may explain the weak correlation — there is no spread to detect a relationship from.</div>
         </div>
       </div>
       <div class="finding-item">
-        <div class="finding-r" style="color:var(--muted)">+0.04</div>
-        <div class="finding-body">
+        <div class="finding-r" style="color:var(--dim)">+0.04</div>
+        <div>
           <div class="finding-feature">Practice Papers</div>
           <div class="finding-desc">Negligible linear effect. This does not mean practice is unimportant. Its effect may be non-linear or may already be captured through previous scores.</div>
         </div>
       </div>
       <div class="finding-item">
-        <div class="finding-r" style="color:var(--muted)">+0.02</div>
-        <div class="finding-body">
+        <div class="finding-r" style="color:var(--dim)">+0.02</div>
+        <div>
           <div class="finding-feature">Extracurricular Activities</div>
           <div class="finding-desc">No detectable linear association. Participation is uniform at 49-51% across all four clusters, making it impossible for this feature to differentiate performance in this dataset.</div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- METHOD -->
-  <section>
-    <div class="section-header">
-      <span class="section-num">05</span>
+<!-- ── 05 Method ────────────────────────────────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 05</div>
       <h2>Method</h2>
     </div>
-    <div class="method-grid">
+    <div class="method-grid reveal">
       <div class="method-card">
         <h4>Feature Engineering</h4>
         <p>Extracurricular Activities encoded as binary integer (1=Yes, 0=No). K-Means requires numeric input and has no built-in handling for categorical variables.</p>
@@ -606,39 +634,41 @@
       </div>
       <div class="method-card">
         <h4>Stack</h4>
-        <p>Python 3.10, pandas, NumPy, scikit-learn, Matplotlib, SciPy. This report rendered with Chart.js, no build step required.</p>
+        <p>Python 3.10, pandas, NumPy, scikit-learn, Matplotlib, SciPy. This page rendered with Chart.js, no build step required.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer>
-    <span>Student Performance Analysis &mdash; K-Means + Correlation</span>
-    <span><a href="https://github.com/sobanmujtaba/student-performance-analysis" target="_blank">github.com/sobanmujtaba/student-performance-analysis</a></span>
-  </footer>
-
-</div><!-- .page -->
+<!-- ── Footer ───────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <p>Built by <a href="https://github.com/sobanmujtaba" target="_blank">Soban Mujtaba</a> &nbsp;&middot;&nbsp; Student Performance Analysis - K-Means + Correlation</p>
+    <p style="margin-top:10px;">
+      <span><a href="https://github.com/sobanmujtaba/student-performance-analysis" target="_blank">github.com/sobanmujtaba/student-performance-analysis</a></span>
+    </p>
+  </div>
+</footer>
 
 <script>
-/* ------------------------------------------------
-   CHART.JS GLOBAL DEFAULTS
-   ------------------------------------------------ */
-Chart.defaults.color         = '#6b7385';
-Chart.defaults.font.family   = "'IBM Plex Mono', monospace";
-Chart.defaults.font.size     = 11;
-Chart.defaults.borderColor   = '#1e2229';
+/* ── Chart.js defaults ───────────────────────────────────────────────────── */
+Chart.defaults.color       = '#4a6070';
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.size   = 11;
+Chart.defaults.borderColor = '#1e2a35';
 
 const COLORS = ['#c0392b', '#e67e22', '#2980b9', '#27ae60'];
 const LABELS = ['C0: Struggling', 'C1: Effort-Driven', 'C2: Coasting', 'C3: High Achievers'];
 
-/* ---- 1. CORRELATION BAR CHART ---- */
+/* ── 1. Correlation bar ─────────────────────────────────────────────────── */
 new Chart(document.getElementById('corrChart'), {
   type: 'bar',
   data: {
     labels: ['Previous Scores', 'Hours Studied', 'Sleep Hours', 'Practice Papers', 'Extracurricular'],
     datasets: [{
       data: [0.9152, 0.3737, 0.0481, 0.0433, 0.0245],
-      backgroundColor: ['#27ae60cc', '#2980b9cc', '#6b738580', '#6b738580', '#6b738580'],
-      borderColor:     ['#27ae60',   '#2980b9',   '#6b7385',   '#6b7385',   '#6b7385'],
+      backgroundColor: ['#27ae60cc', '#2980b9cc', '#4a607080', '#4a607080', '#4a607080'],
+      borderColor:     ['#27ae60',   '#2980b9',   '#4a6070',   '#4a6070',   '#4a6070'],
       borderWidth: 1,
       borderRadius: 2,
     }]
@@ -648,60 +678,52 @@ new Chart(document.getElementById('corrChart'), {
     responsive: true,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` r = ${ctx.raw.toFixed(4)}`
-        }
-      }
+      tooltip: { callbacks: { label: ctx => ` r = ${ctx.raw.toFixed(4)}` } }
     },
     scales: {
       x: {
         min: 0, max: 1.0,
-        grid: { color: '#1e2229' },
-        ticks: { color: '#6b7385' }
+        grid: { color: '#1e2a35' },
+        ticks: { color: '#4a6070' }
       },
       y: {
         grid: { display: false },
-        ticks: { color: '#dde3ee' }
+        ticks: { color: '#d0dde8' }
       }
     }
   }
 });
 
-/* ---- 2. RADAR CHART ---- */
-// Values are manually normalised 0-1 from the cluster profile table
+/* ── 2. Radar chart ─────────────────────────────────────────────────────── */
 new Chart(document.getElementById('radarChart'), {
   type: 'radar',
   data: {
     labels: ['Hours Studied', 'Prev Scores', 'Sleep Hours', 'Practice Papers', 'Perf Index'],
     datasets: [
-      { label: 'C0: Struggling',    data: [0.00, 0.00, 0.00, 0.29, 0.00], borderColor: COLORS[0], backgroundColor: COLORS[0]+'22', borderWidth: 2, pointRadius: 3 },
-      { label: 'C1: Effort-Driven', data: [1.00, 0.06, 0.45, 0.26, 0.22], borderColor: COLORS[1], backgroundColor: COLORS[1]+'22', borderWidth: 2, pointRadius: 3 },
-      { label: 'C2: Coasting',      data: [0.02, 0.92, 0.80, 0.00, 0.46], borderColor: COLORS[2], backgroundColor: COLORS[2]+'22', borderWidth: 2, pointRadius: 3 },
-      { label: 'C3: High Achievers',data: [1.00, 1.00, 0.55, 1.00, 1.00], borderColor: COLORS[3], backgroundColor: COLORS[3]+'22', borderWidth: 2, pointRadius: 3 },
+      { label: 'C0: Struggling',     data: [0.00, 0.00, 0.00, 0.29, 0.00], borderColor: COLORS[0], backgroundColor: COLORS[0]+'22', borderWidth: 2, pointRadius: 3 },
+      { label: 'C1: Effort-Driven',  data: [1.00, 0.06, 0.45, 0.26, 0.22], borderColor: COLORS[1], backgroundColor: COLORS[1]+'22', borderWidth: 2, pointRadius: 3 },
+      { label: 'C2: Coasting',       data: [0.02, 0.92, 0.80, 0.00, 0.46], borderColor: COLORS[2], backgroundColor: COLORS[2]+'22', borderWidth: 2, pointRadius: 3 },
+      { label: 'C3: High Achievers', data: [1.00, 1.00, 0.55, 1.00, 1.00], borderColor: COLORS[3], backgroundColor: COLORS[3]+'22', borderWidth: 2, pointRadius: 3 },
     ]
   },
   options: {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { boxWidth: 10, padding: 10, color: '#6b7385' }
-      }
+      legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, color: '#4a6070' } }
     },
     scales: {
       r: {
         min: 0, max: 1,
-        grid:      { color: '#1e2229' },
-        angleLines:{ color: '#1e2229' },
-        ticks:     { display: false },
-        pointLabels:{ color: '#dde3ee', font: { size: 10 } }
+        grid:        { color: '#1e2a35' },
+        angleLines:  { color: '#1e2a35' },
+        ticks:       { display: false },
+        pointLabels: { color: '#d0dde8', font: { size: 10 } }
       }
     }
   }
 });
 
-/* ---- 3. PERFORMANCE BAR (mean perf per cluster) ---- */
+/* ── 3. Performance bar ─────────────────────────────────────────────────── */
 new Chart(document.getElementById('perfBox'), {
   type: 'bar',
   data: {
@@ -719,20 +741,13 @@ new Chart(document.getElementById('perfBox'), {
     responsive: true,
     plugins: { legend: { display: false } },
     scales: {
-      y: {
-        min: 0, max: 100,
-        grid: { color: '#1e2229' },
-        ticks: { color: '#6b7385' }
-      },
-      x: {
-        grid: { display: false },
-        ticks: { color: '#dde3ee', maxRotation: 0 }
-      }
+      y: { min: 0, max: 100, grid: { color: '#1e2a35' }, ticks: { color: '#4a6070' } },
+      x: { grid: { display: false }, ticks: { color: '#d0dde8', maxRotation: 0 } }
     }
   }
 });
 
-/* ---- 4. CLUSTER SIZE DOUGHNUT ---- */
+/* ── 4. Size doughnut ───────────────────────────────────────────────────── */
 new Chart(document.getElementById('sizeChart'), {
   type: 'doughnut',
   data: {
@@ -740,7 +755,7 @@ new Chart(document.getElementById('sizeChart'), {
     datasets: [{
       data: [2451, 2648, 2496, 2405],
       backgroundColor: COLORS.map(c => c + 'cc'),
-      borderColor: '#111318',
+      borderColor: '#111820',
       borderWidth: 3,
       hoverOffset: 8,
     }]
@@ -749,22 +764,14 @@ new Chart(document.getElementById('sizeChart'), {
     responsive: true,
     cutout: '60%',
     plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { boxWidth: 10, padding: 8, color: '#6b7385' }
-      },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString()} students`
-        }
-      }
+      legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, color: '#4a6070' } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString()} students` } }
     }
   }
 });
 
-/* ---- 5. ELBOW CHART ---- */
-const elbowCtx = document.getElementById('elbowChart');
-new Chart(elbowCtx, {
+/* ── 5. Elbow chart ─────────────────────────────────────────────────────── */
+new Chart(document.getElementById('elbowChart'), {
   type: 'line',
   data: {
     labels: [2, 3, 4, 5, 6, 7, 8],
@@ -772,8 +779,8 @@ new Chart(elbowCtx, {
       {
         label: 'Inertia (WCSS)',
         data: [44281, 33901, 27143, 23071, 20007, 17622, 15786],
-        borderColor: '#f0b429',
-        backgroundColor: '#f0b42920',
+        borderColor: '#f0a500',
+        backgroundColor: '#f0a50020',
         borderWidth: 2,
         pointRadius: 4,
         tension: 0.3,
@@ -782,8 +789,8 @@ new Chart(elbowCtx, {
       {
         label: 'Silhouette',
         data: [0.2555, 0.2067, 0.1956, 0.1983, 0.2016, 0.2050, 0.2166],
-        borderColor: '#64d2ff',
-        backgroundColor: '#64d2ff20',
+        borderColor: '#4fa3e0',
+        backgroundColor: '#4fa3e020',
         borderWidth: 2,
         pointRadius: 4,
         tension: 0.3,
@@ -796,51 +803,41 @@ new Chart(elbowCtx, {
     responsive: true,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { boxWidth: 10, padding: 8, color: '#6b7385' }
-      },
-      annotation: {}
+      legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, color: '#4a6070' } }
     },
     scales: {
       x: {
-        grid: { color: '#1e2229' },
-        ticks: { color: '#6b7385' },
-        title: { display: true, text: 'k', color: '#6b7385' }
+        grid: { color: '#1e2a35' },
+        ticks: { color: '#4a6070' },
+        title: { display: true, text: 'k', color: '#4a6070' }
       },
       y1: {
         type: 'linear', position: 'left',
-        grid: { color: '#1e2229' },
-        ticks: { color: '#f0b429' },
-        title: { display: true, text: 'Inertia', color: '#f0b429' }
+        grid: { color: '#1e2a35' },
+        ticks: { color: '#f0a500' },
+        title: { display: true, text: 'Inertia', color: '#f0a500' }
       },
       y2: {
         type: 'linear', position: 'right',
         grid: { display: false },
-        ticks: { color: '#64d2ff' },
-        title: { display: true, text: 'Silhouette', color: '#64d2ff' }
+        ticks: { color: '#4fa3e0' },
+        title: { display: true, text: 'Silhouette', color: '#4fa3e0' }
       }
     }
   }
 });
 
-/* ------------------------------------------------
-   SCROLL-REVEAL OBSERVER
-   ------------------------------------------------ */
+/* ── Scroll reveal ───────────────────────────────────────────────────────── */
 const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry, i) => {
-    if (entry.isIntersecting) {
-      // stagger children inside each section
-      const el = entry.target;
-      setTimeout(() => el.classList.add('visible'), 60 * i);
-      observer.unobserve(el);
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
     }
   });
 }, { threshold: 0.1 });
 
-document.querySelectorAll(
-  '.stat-card, .cluster-card, .chart-box, .finding-item'
-).forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 </script>
 </body>
 </html>
